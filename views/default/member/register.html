@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{$meta_title}</title>
+</head>
+<script type="text/javascript" src="{SITE_THEME}js/jquery-1.7.2.min.js"></script>
+<script type="text/javascript">
+    var is_moblie_right=false;
+    function shouji(){
+        $.ajax({
+            type:'get',
+            url:'?s=member&c=register&a=checkuser&id='+Math.random(),
+            data:{username:$("#shou").val()},
+            dataType:'json',
+            success:function(data){
+                if(data.result==1){
+                    is_moblie_right=true;
+                    $('#username').html(data.msg)
+                }else{
+
+                    $('#username').html(data.msg)
+                }
+
+
+            }
+        })
+    }
+    var is_sand=false;
+    function sendnn(){
+        var shuju=$("#sendn").attr('data')
+        if(shuju==1){
+            return false
+        }
+        if(!is_moblie_right){
+            checkuser();
+            if(!is_moblie_right) {return false}
+        }
+
+        $.ajax({
+            type:'get',
+            url:'?s=member&c=register&a=sendcaptcha',
+            data:{moblie:$("#shou").val()},
+            dataType:'json',
+            success:function(data){
+
+                if(data.result==1){
+
+                    is_sand=true;
+                    sendagain();
+                }else{
+                    is_sand=false;
+
+                }
+            }
+        })
+
+    }
+    function sendagain(){
+        $("#sendn").attr("data",1)
+
+        var time=60;
+        function ti(){
+            $("#sendn").val('请在'+time+'秒内输入验证码')
+            time--
+            if(time==0){
+                window.clearInterval(timer)
+                $("#sendn").val('发送验证码')
+            }
+        }
+        var timer=window.setInterval("ti()",1000);
+    }
+
+
+</script>
+<body>
+<form action="?s=member&c=register" method="post">
+    <input type="hidden" name="data[user_type]" value="1">
+    <table>
+        <tr>
+            <th>手机号码：</th>
+            <td><input type="text" name="data[username]" id="shou" onblur="shouji()">
+            <span></span></td>
+            <td id="username"></td>
+        </tr>
+        <tr>
+            <th>手机验证码：</th>
+            <td><input type="text" name="data[captcha]">
+                <input type="button" value="发送验证码" id="sendn" data="0" onclick="sendnn()">
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>密码：</th>
+            <td><input type="password" name="data[password]" onblur="checkpass()"></td>
+            <td id="mima"></td>
+        </tr>
+        <tr>
+            <th> 确认密码</th>
+            <td><input type="password" name="data[password2]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>真实姓名：</th>
+            <td><input type="text" name="data[relname]"></td>
+            <td id="name"></td>
+        </tr>
+        <tr>
+            <th>性别：</th>
+            <td><input type="radio" name="data[sex]" value="1">男
+                <input type="radio" name="data[sex]" value="2">女</td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>出生年月：</th>
+            <td><input type="text" name="data[birth]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>工作年份：</th>
+            <td><input type="text" name="data[work_start]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>学历：</th>
+            <td><input type="text" name="data[edu]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>邮箱：</th>
+            <td><input type="text" name="data[email]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>省：</th>
+            <td><input type="text" name="data[province_id]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>市：</th>
+            <td><input type="text" name="data[city_id]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th></th>
+            <td><input type="submit" name="submit" value="提交"></td>
+            <td></td>
+        </tr>
+    </table>
+</form>
+</body>
+</html>
