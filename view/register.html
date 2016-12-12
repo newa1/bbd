@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{$meta_title}</title>
+</head>
+<script type="text/javascript" src="{SITE_THEME}js/jquery-1.7.2.min.js"></script>
+<script type="text/javascript">
+    var is_moblie_right=false;
+    //手机号验证
+    function shouji(){
+        $.ajax({
+            type:'get',
+            url:'?s=member&c=register&a=checkuser&id='+Math.random(),
+            data:{username:$("#shou").val()},
+            dataType:'json',
+            success:function(data){
+                if(data.result==1){
+                    is_moblie_right=true;
+                    $('#username').html(data.msg)
+                }else{
+                    $('#username').html(data.msg)
+                }
+            }
+        })
+    }
+    //初次密码验证
+    function pwdtip(){
+        $('#mima').html('密码的长度为6~12位，由字母，数字组成')
+
+    }
+    function checkpwd(){
+        var pwd=$("#pwd").val();
+        var long=pwd.length;
+        var strt=/[^\d]/g;
+        var strn=/[^a-zA-Z]/g;
+        if(pwd==''){
+            $('#mima').html('密码不能为空')
+            return false
+        }
+        else if(long<6||long>12){
+            $('#mima').html('密码为6~12位')
+            return false
+        }
+        else if(! strt.test(pwd)){
+            $('#mima').html('密码不能全为数字')
+            return false
+        }
+        else if(! strn.test(pwd)){
+            $('#mima').html('密码不能全为字母')
+            return false
+        }
+        else{
+            $('#mima').html('ok');
+        }
+    }
+    //确认密码验证
+    function checkpass(){
+        var pwd=$("#pwd").val();
+        var pwd=$("#password").val();
+
+    }
+
+
+
+
+
+
+
+
+    var is_sand=false;
+    function sendnn(){
+
+        if(!is_moblie_right){
+            checkuser();
+            if(!is_moblie_right) {return false}
+        }
+
+        $.ajax({
+            type:'get',
+            url:'?s=member&c=register&a=sendcaptcha',
+            data:{moblie:$("#shou").val()},
+            dataType:'json',
+            success:function(data){
+
+                if(data.result==1){
+
+                    is_sand=true;
+                    $('#err_code').html(data.msg);
+                    sendagain();
+                }else{
+                    is_sand=false;
+
+                }
+            }
+        })
+
+    }
+    function sendagain(){
+
+
+
+        var ts=60;
+        var t =setInterval(function(){
+            ts--;
+            html=ts+"秒重发";
+            $("#sendn").html(html);
+
+            if(ts==0){
+                clearInterval(t);
+                $("#err_num").html("");
+                $("#sendn").html("发送验证码");
+
+                $('#err_code').html('');
+            }
+        },1000)
+    }
+    function checkcat(){
+
+        $.ajax({
+            type:'get',
+            url:'?s=member&c=register&a=checkcat',
+            data:{cat:$("#cat").val()},
+            dataType:'json',
+            success:function(data){
+                if(data.result==1){
+                    is_moblie_right=true;
+                    $('#ll').html(data.msg)
+                }else{
+                    $('#ll').html(data.msg)
+                }
+            }
+        })
+    }
+
+
+
+</script>
+<body>
+<form action="?s=member&c=register" method="post">
+    <input type="hidden" name="data[user_type]" value="1">
+    <table>
+        <tr>
+            <th>手机号码：</th>
+            <td><input type="text" name="data[username]" id="shou" onblur="shouji()">
+            <span></span></td>
+            <td id="username"  style="color: red;font-size: 12px;"></td>
+        </tr>
+        <tr>
+            <th>手机验证码：</th>
+            <td><input type="text" name="data[captcha]" onblur="checkcat()" id="cat">
+                <span id="ll"></span>
+                <span  class="getcode" style="cursor: pointer" onclick="sendnn()" id="sendn" data="0" >发送验证码</span>
+
+
+            </td>
+            <td id="err_code"></td>
+        </tr>
+        <tr>
+            <th>密码:</th>
+            <td><input type="password" name="data[password]" onfocus="pwdtip()" onblur="checkpwd()"  id="pwd"></td>
+            <td id="mima" style="color: red;font-size: 12px;"></td>
+        </tr>
+        <tr>
+            <th> 确认密码</th>
+            <td><input type="password" name="data[password2]" onblur="checkpass()" id="password"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>真实姓名：</th>
+            <td><input type="text" name="data[relname]"></td>
+            <td id="name"></td>
+        </tr>
+        <tr>
+            <th>性别：</th>
+            <td><input type="radio" name="data[sex]" value="1">男
+                <input type="radio" name="data[sex]" value="2">女</td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>出生年月：</th>
+            <td><input type="text" name="data[birth]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>工作年份：</th>
+            <td><input type="text" name="data[work_start]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>学历：</th>
+            <td><input type="text" name="data[edu]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>邮箱：</th>
+            <td><input type="text" name="data[email]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>省：</th>
+            <td><input type="text" name="data[province_id]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>市：</th>
+            <td><input type="text" name="data[city_id]"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th></th>
+            <td><input type="submit" name="submit" value="提交"></td>
+            <td></td>
+        </tr>
+    </table>
+</form>
+</body>
+</html>
