@@ -13,12 +13,11 @@ class Member extends Common {
 	 * 前台登陆检查
 	 */
 	protected function isLogin($return=0) {
-	    if ($this->memberinfo) {
-		    if (empty($this->memberedit) && $this->controller != 'info') {
+
+		if ($this->memberinfo) {
+		    if (0) {
                 $this->memberMsg(lang('m-com-0'), url('member/info/edit/'));
             }
-			//会员组升级检测
-			$this->groupUpdate();
 			return false;
 		}
 		if ($return) {

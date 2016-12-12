@@ -39,8 +39,8 @@ class Common extends CI_Controller {
         !file_exists(APP_ROOT.'./cache/install.lock') && $this->redirect(url('install/'));
 
 		//加载系统函数库和自定义函数库
-		require EXTENSION_DIR.'function.php';
-		require EXTENSION_DIR.'custom.php';
+		require SYS_ROOT.'function.php';
+		require SYS_ROOT.'custom.php';
 
         require_once SYS_ROOT.'libraries/cache_file.class.php';
         $this->cache = new cache_file();
@@ -86,7 +86,6 @@ class Common extends CI_Controller {
 		//载入会员系统缓存
 		if (!$this->site['SYS_MEMBER'] && is_dir(CONTROLLER_DIR . 'member')) {
 			$this->member = Controller::model('member');
-			$this->membergroup  = $this->cache->get('membergroup');
 			$this->membermodel  = $this->cache->get('model_member');
 			$this->memberconfig	= $this->cache->get('member');
 			if ($this->memberconfig['uc_use'] == 1 && $this->namespace != 'admin') {
@@ -98,6 +97,7 @@ class Common extends CI_Controller {
 				}
 			}
 			$this->memberinfo = $this->getMember();
+
 			$this->view->assign(array(
 				'memberinfo' => $this->memberinfo,
 				'membergroup' => $this->membergroup,
@@ -159,26 +159,19 @@ class Common extends CI_Controller {
 	 * 获取会员信息
 	 */
 	protected function getMember() {
-	    if (get_cookie('member_id') && get_cookie('member_code')) {
-            $uid = (int)get_cookie('member_id');
-			$code = get_cookie('member_code');
-		    if (!empty($uid) && $code == substr(md5(SITE_MEMBER_COOKIE . $uid), 5, 20)) {
-			    $_memberinfo = $this->db->where('id', $uid)->get('member')->row_array();
-				$member_table = $this->membermodel[$_memberinfo['modelid']]['tablename'];
-				if ($member_table) {
-				    $memberdata = $this->db->where('id', $uid)->get($member_table)->row_array();
-					if ($memberdata) {
-					    $_memberinfo = array_merge($_memberinfo, $memberdata);
-						$this->memberedit	= 1; //不需要完善会员资料
-					}
-					if ($this->memberconfig['uc_use'] == 1 && function_exists('uc_api_mysql')) {
-					    $uc = uc_api_mysql('user', 'get_user', array('username'=> $_memberinfo['username']));
-                        $uc != 0 && $_memberinfo['uid'] = $uc[0];
-					}
-					return $_memberinfo;
-				}
-			}
-        }
+		$member_id=$this->session->get('member_id');
+		$user_type=$this->session->get('type');
+
+		if ($member_id && $user_type) {
+            $member_arr=array('member_per','member_com','member_lietou');
+
+			$_memberinfo = $this->model($member_arr[$user_type-1])->where('username=?', $member_id)->select(false);
+
+			return $_memberinfo;
+
+		}
+
+
 		return false;
 	}
     
@@ -841,7 +834,7 @@ class Common extends CI_Controller {
 	 */
 	protected function is_username($username) {
 		$strlen  = strlen($username);
-		$pattern = $this->memberconfig['username_pattern'] ? $this->memberconfig['username_pattern'] : '/^[a-zA-Z0-9_][a-zA-Z0-9_]+$/';
+		$pattern =  '/^0?(13[0-9]|15[012356789]|18[01236789]|14[57]|17[07])[0-9]{8}$/';
 		if(!preg_match($pattern, $username)){
 			return false;
 		} elseif ( 20 < $strlen || $strlen < 2 ) {

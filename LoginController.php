@@ -12,80 +12,37 @@ class LoginController extends Member {
 	public function indexAction() {
 
 
-	    if (!$this->isLogin(1)) {
-            $this->memberMsg(lang('m-log-0', array('1'=>$this->memberinfo['username'])), url('member/'));
+
+	    if (! $this->isLogin(1)) {
+			$type=$this->session->get('type');
+			$this->memberMsg('您不能重复登陆', 'index.php?s=member&c=index&type='.$type);
         }
 
 	    if ($this->isPostForm()) {
 		    $data = $this->post('data');
-
-			//验证码
-//			if ($this->memberconfig['logincode'] && !$this->checkCode($this->post('code'))) {
-//                $this->memberMsg(lang('m-log-1'));
-//            }
-
 			if (empty($data['username']) || empty($data['password'])) {
-                $this->memberMsg(lang('m-log-2'));
+                $this->memberMsg('用户名和密码不能为空');
             }
-
-			$member = $this->db->where('username', $data['username'])->get('member')->row_array();
+			$member = $this->model('member')->where('username=?', $data['username'])->select(false);
 			$user_type=$member['user_type'];
 
 			$time = empty($data['cookie']) ? 0 : time()+360*24*3600; //会话保存时间。
 			$backurl = $data['back'] ? urldecode($data['back']) : '?s=member&c=index&type='.$user_type;
-			if ($this->memberconfig['uc_use'] == 1) { 
-				list($uid, $username, $password, $email) = uc_user_login($data['username'], $data['password']);
-				if ($uid > 0) {
-					if (empty($member)) {
-						$auth = rawurlencode(uc_authcode("$username\t" . time(), 'ENCODE'));
-						$this->memberMsg(lang('m-log-3'), url('member/register/active', array('auth'=>$auth)) . '&back=' . urlencode($backurl), 1);
-					}
-					$ucsynlogin = uc_user_synlogin($uid);
-					$nickname   = $member['nickname'] ? $member['nickname'] : $member['username'];
-					$this->update_login_info($member);
-                    set_cookie('member_id', $member['id'], $time);
-                    set_cookie('member_code', substr(md5(SITE_MEMBER_COOKIE . $member['id']), 5, 20), $time);
-					$this->memberMsg(lang('m-log-4') . $ucsynlogin, $backurl, 1);
-				} elseif ($uid == -1) {
-				    if ($member) {
-					    //注册Ucenter
-						$uid = uc_user_register($member['username'], $data['password'], $member['email']);
-						if ($uid > 0) {
-						    $ucsynlogin = uc_user_synlogin($uid);
-						    $nickname   = $member['nickname'] ? $member['nickname'] : $member['username'];
-							$this->update_login_info($member);
-                            set_cookie('member_id', $member['id'], $time);
-                            set_cookie('member_code', substr(md5(SITE_MEMBER_COOKIE . $member['id']), 5, 20), $time);
-					        $this->memberMsg(lang('m-log-4') . $ucsynlogin, $backurl, 1);
-						} elseif ($uid == -1) {
-							$this->memberMsg(lang('m-log-5'));
-						} elseif ($uid == -2) {
-							$this->memberMsg(lang('m-log-6'));
-						} else {
-							$this->memberMsg(lang('m-log-7'));
-						}
-					}
-					$this->memberMsg(lang('m-log-5'));
-				} elseif ($uid == -2) {
-					$this->memberMsg(lang('m-log-6'));
-				} else {
-					$this->memberMsg(lang('m-log-7'));
-				}
-			}
-			if (empty($member)) {
-                $this->memberMsg(lang('m-log-8'));
-            }
 
+
+			if (empty($member)) {
+                $this->memberMsg('会员名不能为空');
+            }
 
 			if ($member['password'] != md5(md5($data['password']) .$member['salt']. md5($data['password']))) {
-                $this->memberMsg(lang('m-log-6'));
+                $this->memberMsg('密码错误');
             }
-//			$this->update_login_info($member);
-            $this->session->set('member_id', $member['username']);
-//			$this->session->set('member_code', substr(md5(SITE_MEMBER_COOKIE . $member['username']), 5, 20));
-			$this->memberMsg(lang('m-log-4'), $backurl, 1);
+			$this->session->set('member_id', $member['username']);
+			$this->session->set('type', $member['user_type']);
+			$this->memberMsg('登陆成功', $backurl, 1);
 		}
-		$backurl = $this->get('back') ? $this->get('back') : (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : url('member/'));
+
+		$backurl = $this->get('back') ? $this->get('back') : (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '?s=member&c=index&type='.$user_type);
 	    $this->view->assign(array(
 			'meta_title' => lang('m-log-9') . '-' . $this->site['SITE_NAME'],
 			'backurl'    => urlencode($backurl),

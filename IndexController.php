@@ -7,16 +7,12 @@ class IndexController extends Member {
 	}
 	
 	public function indexAction() {
-
-
 		$this->isLogin(); //登录验证
-
-
-	    $this->view->assign(array(
+		$this->view->assign(array(
 			'indexc'     => 1,
 			'model'		 => $this->get_model(),
 			'form'       => $this->getFormMember(),
-		    'meta_title' => lang('member') . '-' . $this->site['SITE_NAME'],
+		    'meta_title' => '会员中心' . '-' . $this->site['SITE_NAME'],
 		));
 		$type=$_GET['type'];
 		if($type==1){

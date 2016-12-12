@@ -19,48 +19,35 @@ class RegisterController extends Member {
 	 * 注册
 	 */
 	public function indexAction() {
-
-		if (!$this->isLogin(1)) $this->msg(lang('m-reg-1'), url('member/'));
-	    if ($this->isPostForm()) {
+		if (!$this->isLogin(1)) {
+			$type=$this->session->get('type');
+			$this->memberMsg('您不能重复登陆', 'index.php?s=member&c=index&type='.$type);
+		}
+		if ($this->isPostForm()) {
 			$data = $_POST['data'];
 			$usertype=$data['user_type'];
 			//再次验证短信验证码
 			if ($this->post('code') && !$this->checkNum($this->post('code'))) $this->memberMsg("短信验证码不正确");
-
-
-            //内部验证
+			//内部验证
 			$this->check($data,$usertype);
-
 			//开始注册
 			if($usertype==1){
-
 				$uid=$this->reg($data,$usertype);
-				//0代表浏览器关闭及清除cookie值
-				setcookie('member_per_id', $uid, 0); //登录cookie
-				setcookie('member_per_code', substr(md5(SITE_MEMBER_COOKIE . $uid), 5, 20), 0);
 			}
 			if($usertype==2){
 				$uid=$this->reg($data,$usertype);
-				setcookie('member_com_id', $uid, 0); //登录cookie
-				setcookie('member_com_code', substr(md5(SITE_MEMBER_COOKIE . $uid), 5, 20), 0);
 			}
 			if($usertype==3){
 				$uid=$this->reg($data,$usertype);
-				setcookie('member_lietou_id', $uid, 0); //登录cookie
-				setcookie('member_lietou_code', substr(md5(SITE_MEMBER_COOKIE . $uid), 5, 20), 0);
 			}
-			if (empty($uid)) $this->memberMsg(lang('m-reg-2'));
-//			$this->regEmail($data); //注册邮件提示
-			$this->memberMsg(lang('m-reg-3'), url('member/login'), 1);
+			if (empty($uid)) $this->memberMsg('注册失败');
+			$this->session->set('member_id', $data['username']);
+			$this->session->set('type', $data['user_type']);
 
-
+			$this->memberMsg('注册成功', url('member/login'), 1);
 		}
-
 		$this->assign(array(
-
-			'meta_title'	=> lang('m-reg-4') . '-' . '布布丁',
-
-
+			'meta_title'	=> '会员注册' . '-' . '布布丁',
 		));
 		$type=$_GET['type'];
 		//个人类型
@@ -176,16 +163,30 @@ class RegisterController extends Member {
 		    $this->memberMsg(lang('m-pms-8'));
 		}
 	}
-	
+
+	/*
+	 * 手机验证码验证
+	 */
+	public function checkcatAction(){
+		$cat = $this->get('cat');
+		if (empty($cat)) exit($this->ajaxMsg('验证码不能为空', 0));
+		$code=$this->session->get('num');
+		if($cat!=$code) exit($this->ajaxMsg('验证码不正确，请重新输入', 0));
+		exit($this->ajaxMsg('√', 1));
+
+
+	}
 	/**
 	 * 会员名验证
 	 */
 	public function checkuserAction() {
 		$username = $this->get('username');
-		if (empty($username)) exit($this->ajaxMsg(lang('m-reg-7'), 0));
+		if (empty($username)) exit($this->ajaxMsg('手机号不能为空', 0));
+		//暂时先不进行手机合法验证
+//		if (!$this->is_username($username)) exit($this->ajaxMsg('手机号不合法', 0));
 
-		$member = $this->member->from(null, 'uid')->where('username=?', $username)->select(false);
-		if ($member) exit($this->ajaxMsg(lang('m-reg-8'), 0));
+		$member = $this->member->where('username=?', $username)->select(false);
+		if ($member) exit($this->ajaxMsg('手机号已存在', 0));
 		exit($this->ajaxMsg('√', 1));
 	}
 	/*
@@ -194,17 +195,20 @@ class RegisterController extends Member {
 	public function sendcaptchaAction(){
 		//再次验证
 		$username = $this->get('moblie');
-		if (empty($username)) exit($this->ajaxMsg(lang('m-reg-7'), 0));
-		$member = $this->member_per->from(null, 'uid')->where('username=?', $username)->select(false);
+		if (empty($username)) exit($this->ajaxMsg('手机号不能为空', 0));
+		$member = $this->member->where('username=?', $username)->select(false);
 		if ($member) exit($this->ajaxMsg('用户名已存在', 0));
 
+		if(!$_COOKIE['is_send_r']){
+			setcookie("is_send_r",1,time()+60);
+		}else{
+			exit($this->ajaxMsg('请稍后发送', 0));
+		}
 
 		//把验证码储存在session中；
 
 		$code=$this->captcha();
-		$this->session->set('num',$code);
-
-
+		$this->session->set('num',1236);
 		exit($this->ajaxMsg('发送成功',1));
 
 
@@ -250,31 +254,31 @@ class RegisterController extends Member {
 	 * 内部验证
 	 */
 	private function check($data,$type) {
-		if (empty($data['username'])) $this->memberMsg(lang('m-reg-7'));
+		if (empty($data['username'])) $this->memberMsg('请填写手机号');
 
-		if (empty($data['password'])) $this->memberMsg(lang('m-reg-11'));
+		if (empty($data['password'])) $this->memberMsg('密码不能为空');
 
-		if ($data['password'] != $data['password2']) $this->memberMsg(lang('m-reg-12'));
+		if ($data['password'] != $data['password2']) $this->memberMsg('两次密码不一致');
 
 //		if (!check::is_email($data['email'])) $this->memberMsg(lang('m-reg-9'));
 		if($type==1){//个人会员
 			$member = $this->member_per->where('email=?', $data['email'])->select(false);
-			if ($member) $this->memberMsg(lang('m-reg-10'));
-			$member = $this->member_per->from(null, 'id')->where('username=?', $data['username'])->select(false);
-			if ($member) $this->memberMsg(lang('m-reg-8'));
+			if ($member) $this->memberMsg('邮箱已被注册，请重新填写');
+			$member = $this->member_per->where('username=?', $data['username'])->select(false);
+			if ($member) $this->memberMsg('手机号已存在');
 
 		}
 		if($type==2){//企业会员
-			$member = $this->member_com->from(null, 'id')->where('email=?', $data['email'])->select(false);
-			if ($member) $this->memberMsg(lang('m-reg-10'));
-			$member = $this->member_com->from(null, 'id')->where('username=?', $data['username'])->select(false);
-			if ($member) $this->memberMsg(lang('m-reg-8'));
+			$member = $this->member_com->where('email=?', $data['email'])->select(false);
+			if ($member) $this->memberMsg('邮箱已被注册，请重新填写');
+			$member = $this->member_com->where('username=?', $data['username'])->select(false);
+			if ($member) $this->memberMsg('手机号已存在');
 		}
 		if($type==3){//猎头会员
-			$member = $this->member_lietou->from(null, 'id')->where('email=?', $data['email'])->select(false);
-			if ($member) $this->memberMsg(lang('m-reg-10'));
-			$member = $this->member_lietou->from(null, 'id')->where('username=?', $data['username'])->select(false);
-			if ($member) $this->memberMsg(lang('m-reg-8'));
+			$member = $this->member_lietou->where('email=?', $data['email'])->select(false);
+			if ($member) $this->memberMsg('邮箱已被注册，请重新填写');
+			$member = $this->member_lietou->where('username=?', $data['username'])->select(false);
+			if ($member) $this->memberMsg('手机号已存在');
 		}
 
 	}
@@ -311,6 +315,7 @@ class RegisterController extends Member {
 		$data['password'] = md5(md5($data['password']) . $data['salt'] . md5($data['password']));
 		$data['login_ip'] = '';
 		$data['login_time'] = 0;
+
 		if($type==1){
 			$uid = $this->member_per->insert($data);
 		}
